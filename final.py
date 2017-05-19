@@ -1,4 +1,4 @@
-# CIS 347 Group 5: David, Josh, Mario, Santi
+# CIS 347 Group 5: David, Josh, Mario, Santiago
 import requests
 import yaml
 from pprint import pprint
