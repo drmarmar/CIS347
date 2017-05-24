@@ -114,16 +114,3 @@ else:
 	dev.close()
 
 
-	''' 
-	['ge-0/0/0.0|00:0c:29:4e:b5:2a', 'ge-0/0/4.0|70:88:6b:81:ed:d7', 'ge-0/0/2.0|d8:50:e6:05:8b:41', 'ge-0/0/9.0|38:c9:86:59:7e:bd']
-These MACs match your ODL flow MACs. Would you like to bind these MACs to their current interface? (yes or no) yes
-['ge-0/0/0']
-['ge-0/0/4']
-['ge-0/0/2']
-['ge-0/0/9']
-set interface ['ge-0/0/0'] allowed-mac ['00:0c:29:4e:b5:2a']
-set interface ['ge-0/0/4'] allowed-mac ['70:88:6b:81:ed:d7']
-set interface ['ge-0/0/2'] allowed-mac ['d8:50:e6:05:8b:41']
-set interface ['ge-0/0/9'] allowed-mac ['38:c9:86:59:7e:bd']
-Traceback (most recent call last):
-'''
