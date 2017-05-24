@@ -1,10 +1,8 @@
 # CIS 347 Group 5: David, Josh, Mario, Santiago
 import requests
 import yaml
-from pprint import pprint
 from jnpr.junos import Device
 from jnpr.junos.utils.config import Config
-from jnpr.junos.op.arp import ArpTable
 from jnpr.junos.factory.factory_loader import FactoryLoader
 
 #OpenDayLight RESTCONF API settings.
@@ -39,20 +37,22 @@ for nodes in response.json()['network-topology']['topology']:
 # Part 2 ---------------------------------------------------------------------------------------------------
 
 
-yaml_data="""
+yaml_data = '''
 ---
-ArpTable:
-  rpc: get-arp-table-information
-  item: arp-table-entry
+EtherSwTable:
+  rpc: get-interface-ethernet-switching-table
+  item: ethernet-switching-table/mac-table-entry[mac-type='Learn']
   key: mac-address
-  view: ArpView
-ArpView:
+  view: EtherSwView
+
+EtherSwView:
   fields:
-    mac_address: mac-address
-    ip_address: ip-address
-    interface_name: interface-name
-    host: hostname
-"""
+    vlan_name: mac-vlan
+    mac: mac-address
+    mac_type: mac-type
+    mac_age: mac-age
+    interface: mac-interfaces-list/mac-interfaces
+'''
 # Login to switch
 host = raw_input('Enter Switch IP: ')
 switch_user = raw_input('Enter switch username: ')
@@ -62,36 +62,41 @@ dev.open()
 
 # Retrieve ArpTable info
 globals().update(FactoryLoader().load(yaml.load(yaml_data)))
-arp_table = ArpTable(dev)
-arp_table.get()
+table = EtherSwTable(dev)
+table.get()
 
 # Organize Arp entries
-arp_mac = []
-for arp in arp_table:
-        print 'mac_address: ', arp.mac_address
-        print 'ip_address: ', arp.ip_address
-        print 'interface_name:', arp.interface_name
-        print 'hostname:', arp.host
-        print ''
-        arp_mac.append(arp.interface_name+'|'+arp.mac_address)
+mac_table = []
+for i in table:
+  	print 'vlan_name:', i.vlan_name
+  	print 'mac:', i.mac
+  	print 'mac_type:', i.mac_type
+  	print 'mac_age:', i.mac_age
+  	print 'interface:', i.interface
+  	print
+  	mac_table.append(i.interface+'|'+i.mac)
 
 # Compare MACs from ODL and ARP Table
-#check = list(set(odl_macs) & set(arp_mac))
-arp_set = [i for e in odl_macs for i in arp_mac if e in i]
-port_interface = [i.split('|', 1)[0] for i in arp_set]
-port_mac = [i.split('|', 1)[1] for i in arp_set]
+mac_set = [i for e in odl_macs for i in mac_table if e in i]
+#port_interface = [i.split('|', 1)[0] for i in mac_set]
+#port_mac = [i.split('|', 1)[1] for i in mac_set]
 
 # Automate the port security for each entry in final list.
-print arp_set
+print mac_set
 port_security = raw_input('These MACs match your ODL flow MACs. Would you like to bind these MACs to their current interface? (yes or no) ')
 if port_security.lower() == 'yes':
 	config_add =[]
-	for i in arp_set:
-		 interface = [i.split('|', 1)[0]]
+	for i in mac_set:
 		 mac = [i.split('|', 1)[1]]
-		 config_add.append('set interface %s allowed-mac %s' % (interface, mac))
+		 new_mac = mac.pop()
+		 interface = [i.split('|', 1)[0]]
+		 interface = [i[:-2] for i in interface]
+		 print interface
+		 new_interface = interface.pop()
+		 print new_interface
+		 config_add.append('set interface %s allowed-mac %s' % (new_interface, new_mac))
 	set_add = '\n'.join(map(str,config_add))
-
+	print set_add
 	config_script = """
 	edit ethernet-switching-options secure-access-port
 	%s
@@ -107,7 +112,6 @@ if port_security.lower() == 'yes':
 else:
 	print "Too bad. Switch, out."
 	dev.close()
-
 
 
 	''' 
