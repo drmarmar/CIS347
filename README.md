@@ -1,6 +1,7 @@
 # CIS347
 
-Make sure you have python installed. Run the "final.py" script like this:
+Make sure you have python installed. 
+###Run the "final.py" script like this:
 '''
 python final.py
 '''
