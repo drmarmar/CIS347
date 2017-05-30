@@ -9,7 +9,7 @@ from jnpr.junos.factory.factory_loader import FactoryLoader
 odl_ip = "192.168.140.253"
 username = "admin"
 password = "admin"
-odl_url = 'http://192.168.140.253:8181/restconf/operational/network-topology:network-topology'
+odl_url = 'http://' + odl_ip + ':8181/restconf/operational/network-topology:network-topology'
 odl_username = username
 odl_password = password
 
@@ -36,7 +36,7 @@ for nodes in response.json()['network-topology']['topology']:
 
 # Part 2 ---------------------------------------------------------------------------------------------------
 
-
+# Yaml organization for EthernetSwitchingTable Entries.
 yaml_data = '''
 ---
 EtherSwTable:
@@ -60,12 +60,12 @@ switch_password = "admin12345"
 dev = Device(host='%s' % (host),user='%s' % (switch_user),password='%s' %(switch_password))
 dev.open()
 
-# Retrieve ArpTable info
+# Retrieve EthernetSwitchingTable info
 globals().update(FactoryLoader().load(yaml.load(yaml_data)))
 table = EtherSwTable(dev)
 table.get()
 
-# Organize Arp entries
+# Organize EthernetSwitchingTable entries
 mac_table = []
 for i in table:
   	print 'vlan_name:', i.vlan_name
@@ -76,10 +76,8 @@ for i in table:
   	print
   	mac_table.append(i.interface+'|'+i.mac)
 
-# Compare MACs from ODL and ARP Table
+# Compare MACs from ODL and EthernetSwitchingTable Table
 mac_set = [i for e in odl_macs for i in mac_table if e in i]
-#port_interface = [i.split('|', 1)[0] for i in mac_set]
-#port_mac = [i.split('|', 1)[1] for i in mac_set]
 
 # Automate the port security for each entry in final list.
 print mac_set
@@ -89,9 +87,7 @@ for i in mac_set:
 	new_mac = mac.pop()
 	interface = [i.split('|', 1)[0]]
 	interface = [i[:-2] for i in interface]
-	#print interface
 	new_interface = interface.pop()
-	#print new_interface
 	config_add.append('set interface %s allowed-mac %s' % (new_interface, new_mac))
 set_add = '\n'.join(map(str,config_add))
 print set_add
@@ -99,14 +95,10 @@ config_script = """
 edit ethernet-switching-options secure-access-port
 %s
 """ % (set_add)
-
+# Load and Commit the configuration to the switch
 cu = Config(dev)
 cu.load(config_script, format="set", merge=True)
 print 'These are the changes:\n ' + cu.diff()
-#	print cu.diff()
 cu.commit()
 print "Configuration Successful! Goodbye."
 dev.close()
-
-
-
